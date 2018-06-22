@@ -1,19 +1,21 @@
 """
 Multi-layer Recurrent Neural Networks (LSTM, RNN) for 
 character-level language models in Python using Tensorflow 
-and modified to work with deeplearn.js and ML5.js
- 
+and modified to work with tensorflow.js and ml5.js
+
 Based on https://github.com/sherjilozair/char-rnn-tensorflow.
  
 This script will train and dump the checkpoints to javascript
 """
 
 from __future__ import print_function
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 import tensorflow as tf
+import logging
 
 import argparse
 import time
-import os
 import glob
 from six.moves import cPickle
 
@@ -24,15 +26,17 @@ from pprint import pprint
 from six import text_type
 from json_checkpoint_vars import dump_checkpoints
 
-import platform
-print(platform.python_version())
+# hide logs
+tf.logging.set_verbosity(tf.logging.ERROR)
 
 def main():
     parser = argparse.ArgumentParser(
                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data_dir', type=str, default='data/tinyshakespeare',
                         help='data directory containing input.txt')
-    parser.add_argument('--save_dir', type=str, default='checkpoints',
+    parser.add_argument('--save_model', type=str, default='models',
+                        help='directory to store the ml5js model')
+    parser.add_argument('--save_checkpoints', type=str, default='checkpoints',
                         help='directory to store checkpointed models')
     parser.add_argument('--log_dir', type=str, default='logs',
                         help='directory to store tensorboard logs')
@@ -71,16 +75,16 @@ def main():
     args = parser.parse_args()
     train(args)
 
-def getModelVocab(model_name):
-    print("Getting the model's vocabulary")
-    with open(os.path.join('checkpoints', model_name, 'chars_vocab.pkl'), 'rb') as f:
+def getModelVocab(path, model_name):
+    # print("Getting the model's vocabulary")
+    with open(os.path.join(path, model_name, 'chars_vocab.pkl'), 'rb') as f:
         chars, vocab = cPickle.load(f)
     return vocab
 
 def train(args):
     model_name = args.data_dir.split("/")[-1]
     # make a dir to store checkpoints
-    args.save_dir = os.path.join('checkpoints', model_name)
+    args.save_dir = os.path.join(args.save_checkpoints, model_name)
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
     
@@ -119,6 +123,7 @@ def train(args):
 
     model = Model(args)
 
+    print('{"chart": "loss", "axis": "Iteration"}')
     with tf.Session() as sess:
         # instrument for tensorboard
         summaries = tf.summary.merge_all()
@@ -148,10 +153,8 @@ def train(args):
                 writer.add_summary(summ, e * data_loader.num_batches + b)
 
                 end = time.time()
-                print("{}/{} (epoch {}), train_loss = {:.3f}, time/batch = {:.3f}"
-                      .format(e * data_loader.num_batches + b,
-                              args.num_epochs * data_loader.num_batches,
-                              e, train_loss, end - start))
+                print('{"chart": "loss", "x": ' +str(e * data_loader.num_batches + b) + ', "y": {:.6f}}}'.format(train_loss))
+
                 if (e * data_loader.num_batches + b) % args.save_every == 0\
                         or (e == args.num_epochs-1 and b == data_loader.num_batches-1):
                     # remove previous checkpoints
@@ -163,12 +166,12 @@ def train(args):
                     checkpoint_path = os.path.join(args.save_dir, model_name)
                     saver.save(sess, checkpoint_path, global_step=e * data_loader.num_batches + b)
                     final_model = '{}-{}'.format(model_name, e * data_loader.num_batches + b)
-                    print("model saved to {}".format(checkpoint_path))
+                    print("Model saved to {}!".format(checkpoint_path))
 
     # get the vocab
-    model_vocab = getModelVocab(model_name)
+    model_vocab = getModelVocab(args.save_checkpoints, model_name)
     # dump the checkpoints to javascript
-    dump_checkpoints(model_vocab, model_name, final_model)
+    dump_checkpoints(args.save_checkpoints, args.save_model, model_vocab, model_name, final_model)
 
 if __name__ == '__main__':
     main()
