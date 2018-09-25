@@ -58,14 +58,12 @@ function generate() {
     };
 
     // Generate text with the lstm
-    lstm.generate(data, gotData);
-
-    // Update the DOM elements with typed and generated text
-    function gotData(result) {
+    lstm.generate(data, (err,result)=>{
+      // Update the DOM elements with typed and generated text
       select('#status').html('Ready!');
       select('#original').html(original);
-      select('#prediction').html(result.generated);
-    }
+      select('#prediction').html(result);
+    });
   } else {
     // Clear everything
     select('#original').html('');
