@@ -11,7 +11,7 @@ For more models see: https://github.com/ml5js/ml5-data-and-training/tree/master/
 === */
 
 // Create the LSTM Generator passing it the model directory
-const lstm = ml5.LSTMGenerator('models/hemingway/', modelReady);
+const lstm = ml5.RNN('models/hemingway/', modelReady);
 
 let textInput;
 let tempSlider;
@@ -62,7 +62,7 @@ function generate() {
       // Update the DOM elements with typed and generated text
       select('#status').html('Ready!');
       select('#original').html(original);
-      select('#prediction').html(result);
+      select('#prediction').html(result.sample);
     });
   } else {
     // Clear everything
