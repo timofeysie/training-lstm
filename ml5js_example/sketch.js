@@ -6,12 +6,12 @@
 /* ===
 ML5 Example
 Interactive LSTM Text Generation Example using p5.js
-This uses a pre-trained model on a corpus of Ernetst Hemingway
+This uses a pre-trained model on a corpus of Ernest Hemingway
 For more models see: https://github.com/ml5js/ml5-data-and-training/tree/master/models/lstm
 === */
 
 // Create the LSTM Generator passing it the model directory
-const lstm = ml5.RNN('models/hemingway/', modelReady);
+const lstm = ml5.charRNN("models/hemingway/", modelReady);
 
 let textInput;
 let tempSlider;
